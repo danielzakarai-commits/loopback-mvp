@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>LoopBack</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --p:#7B5EA7; --pl:#9B7EC8; --pp:#EDE8F5; --pd:#4A3570;
+    --g:#6BBF59; --gl:#8DD47D; --gp:#EAF5E6; --gd:#3D7A2D;
+    --tx:#2A1F40; --mt:#7B6E96; --bd:#E0D8F0; --wh:#fff; --bg:#F7F5FF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; min-height: 100vh;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg); color: var(--tx);
+    overflow-x: hidden;
+  }
+
+  .page { display: none; flex-direction: column; min-height: 100vh; }
+  .page.active { display: flex; animation: fadeUp 0.3s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  /* ── status bar ── */
+  .status-bar {
+    background: var(--p); padding: 8px 16px;
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: rgba(255,255,255,0.8); font-weight: 600;
+  }
+
+  /* ── browser bar ── */
+  .browser-bar {
+    background: #f1f3f4; padding: 6px 10px;
+    display: flex; align-items: center; gap: 7px;
+    border-bottom: 1px solid #ddd;
+  }
+  .browser-url {
+    flex: 1; background: #fff; border-radius: 20px;
+    padding: 4px 10px; font-size: 11px; color: #444;
+    border: 1px solid #ddd; display: flex; align-items: center; gap: 5px;
+  }
+  .url-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--g); flex-shrink: 0; }
+  .browser-nav { font-size: 14px; color: #666; cursor: pointer; padding: 0 2px; }
+
+  /* ── progress ── */
+  .prog { height: 3px; background: var(--pp); }
+  .prog-fill { height: 100%; background: var(--g); transition: width 0.5s; }
+
+  /* ── top bar ── */
+  .top-bar {
+    background: var(--p); padding: 14px 16px 18px;
+  }
+  .top-logo-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .top-logo { font-family: 'Syne', sans-serif; font-size: 16px; color: #fff; display: flex; align-items: center; gap: 7px; }
+  .top-logo span { color: var(--gl); }
+  .top-avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--gl); display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 800;
+    color: var(--gd); border: 2px solid rgba(255,255,255,0.4);
+    font-family: 'Syne', sans-serif;
+  }
+
+  /* ── body ── */
+  .body { flex: 1; padding: 14px; display: flex; flex-direction: column; gap: 11px; }
+
+  /* cards */
+  .card { background: var(--wh); border-radius: 14px; padding: 13px 14px; border: 1px solid var(--bd); }
+  .card-lbl { font-size: 10px; font-weight: 700; color: var(--mt); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 5px; }
+
+  /* stats row */
+  .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; }
+  .stat { background: var(--wh); border-radius: 12px; padding: 10px 8px; border: 1px solid var(--bd); text-align: center; }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 16px; color: var(--p); font-weight: 800; }
+  .stat-lbl { font-size: 9px; color: var(--mt); font-weight: 600; margin-top: 2px; }
+
+  /* history */
+  .hist-row { display: flex; align-items: center; gap: 9px; padding: 7px 0; border-bottom: 1px solid var(--bd); }
+  .hist-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .hist-icon { font-size: 15px; }
+  .hist-name { font-size: 11px; font-weight: 700; color: var(--tx); }
+  .hist-sub { font-size: 9px; color: var(--mt); }
+  .hist-pts { margin-left: auto; font-size: 11px; font-weight: 800; color: var(--gd); }
+
+  /* big buttons */
+  .btn { border: none; border-radius: 13px; padding: 14px; font-size: 14px; font-weight: 700; width: 100%; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .btn:active { transform: scale(0.97); }
+  .btn-purple { background: var(--p); color: #fff; }
+  .btn-purple:hover { background: var(--pd); }
+  .btn-green { background: var(--g); color: #fff; }
+  .btn-green:hover { background: var(--gd); }
+  .btn-outline { background: var(--wh); color: var(--p); border: 1.5px solid var(--p); }
+
+  /* mat chip */
+  .mat-chip { display: flex; align-items: center; gap: 9px; background: var(--gp); border: 1px solid var(--g); border-radius: 11px; padding: 9px 12px; }
+  .mat-chip-icon { font-size: 20px; }
+  .mat-chip-lbl { font-size: 9px; color: var(--gd); font-weight: 600; }
+  .mat-chip-name { font-size: 13px; font-weight: 800; color: var(--tx); }
+  .mat-chip-pts { margin-left: auto; font-size: 12px; font-weight: 800; color: var(--gd); }
+
+  /* kiosk tag */
+  .kiosk-tag { display: flex; align-items: center; gap: 9px; background: var(--gp); border: 1px solid var(--g); border-radius: 11px; padding: 9px 12px; }
+  .kiosk-tag-lbl { font-size: 9px; color: var(--gd); font-weight: 600; }
+  .kiosk-tag-name { font-size: 12px; font-weight: 800; color: var(--tx); }
+
+  /* camera box */
+  .cam-box {
+    width: 100%; aspect-ratio: 1;
+    background: #111; border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; border: 2px solid #222; overflow: hidden;
+  }
+  .cam-box-inner { font-size: 42px; }
+  .cam-label { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 8px; }
+  .cam-corner { position: absolute; width: 22px; height: 22px; }
+  .cam-corner.tl { top:10px; left:10px; border-top:2.5px solid var(--gl); border-left:2.5px solid var(--gl); border-radius:3px 0 0 0; }
+  .cam-corner.tr { top:10px; right:10px; border-top:2.5px solid var(--gl); border-right:2.5px solid var(--gl); border-radius:0 3px 0 0; }
+  .cam-corner.bl { bottom:10px; left:10px; border-bottom:2.5px solid var(--pl); border-left:2.5px solid var(--pl); border-radius:0 0 0 3px; }
+  .cam-corner.br { bottom:10px; right:10px; border-bottom:2.5px solid var(--pl); border-right:2.5px solid var(--pl); border-radius:0 0 3px 0; }
+
+  /* ai bar */
+  .ai-bar { height: 4px; background: var(--pp); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+  .ai-fill { height: 100%; background: var(--p); border-radius: 2px; animation: aiLoad 2.2s ease forwards; }
+  @keyframes aiLoad { from{width:0} to{width:92%} }
+
+  /* deposit box */
+  .dep-box { background: var(--wh); border-radius: 14px; padding: 14px; border: 2px solid var(--g); text-align: center; }
+  .dep-icon { font-size: 32px; margin-bottom: 6px; }
+  .dep-title { font-family: 'Syne', sans-serif; font-size: 15px; color: var(--tx); margin-bottom: 4px; }
+  .dep-sub { font-size: 11px; color: var(--mt); line-height: 1.5; margin-bottom: 12px; }
+
+  /* success */
+  .suc-card { background: var(--p); border-radius: 16px; padding: 18px; text-align: center; }
+  .suc-icon { font-size: 36px; margin-bottom: 6px; }
+  .suc-pts { font-family: 'Syne', sans-serif; font-size: 36px; color: #fff; }
+  .suc-lbl { font-size: 10px; color: rgba(255,255,255,0.6); margin-bottom: 4px; }
+  .suc-msg { font-size: 11px; color: rgba(255,255,255,0.8); line-height: 1.5; }
+  .bal-card { background: var(--wh); border-radius: 14px; padding: 12px; border: 1px solid var(--bd); text-align: center; }
+  .bal-num { font-family: 'Syne', sans-serif; font-size: 28px; color: var(--p); }
+  .bal-lbl { font-size: 10px; color: var(--mt); }
+  .bal-lvl { font-size: 10px; color: var(--gd); font-weight: 700; margin-top: 3px; }
+
+  /* profile header extras */
+  .prof-name { font-family: 'Syne', sans-serif; font-size: 18px; color: #fff; margin-top: 6px; }
+  .prof-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 3px 10px; font-size: 9px; color: #fff; font-weight: 600; margin-top: 4px; }
+  .prof-pts-row { display: flex; gap: 8px; margin-top: 12px; }
+  .prof-pts-pill { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 7px 10px; flex: 1; text-align: center; }
+  .prof-pts-num { font-family: 'Syne', sans-serif; font-size: 18px; color: #fff; font-weight: 800; }
+  .prof-pts-lbl { font-size: 8px; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+
+  /* land page */
+  .land-hero { background: var(--p); padding: 24px 16px 28px; text-align: center; }
+  .land-logo { font-family: 'Syne', sans-serif; font-size: 22px; color: #fff; }
+  .land-logo span { color: var(--gl); }
+  .land-tag { font-size: 10px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+  .land-kiosk { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 5px 14px; font-size: 10px; color: #fff; font-weight: 600; margin-top: 10px; }
+  .land-body { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--bg); }
+  .land-card { background: var(--wh); border-radius: 16px; padding: 16px; border: 1px solid var(--bd); text-align: center; }
+  .land-card-icon { font-size: 28px; margin-bottom: 8px; }
+  .land-card-title { font-family: 'Syne', sans-serif; font-size: 16px; color: var(--tx); margin-bottom: 4px; }
+  .land-card-sub { font-size: 11px; color: var(--mt); line-height: 1.5; margin-bottom: 14px; }
+  .land-steps { display: flex; flex-direction: column; gap: 7px; }
+  .land-step { display: flex; align-items: center; gap: 10px; background: var(--wh); border-radius: 10px; padding: 9px 12px; border: 1px solid var(--bd); }
+  .land-sn { width: 20px; height: 20px; border-radius: 50%; background: var(--pp); color: var(--pd); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .land-step-txt { font-size: 11px; color: var(--tx); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 1: LANDING (shown right after QR scan)
+════════════════════════════════════════════ -->
+<div class="page active" id="page-landing">
+  <div class="status-bar"><span>9:41</span><span>▲ WiFi ■</span></div>
+  <div class="browser-bar">
+    <span class="browser-nav">←</span>
+    <div class="browser-url"><div class="url-dot"></div>loopback.ae/session/k04</div>
+    <span class="browser-nav">⋮</span>
+  </div>
+  <div class="prog"><div class="prog-fill" style="width:15%"></div></div>
+  <div class="land-hero">
+    <div style="display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:6px;">
+      <svg width="28" height="28" viewBox="0 0 40 40" fill="none"><path d="M20 6 C11 6 4 13 4 20" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><path d="M4 20 C4 29 11 36 20 36 C29 36 36 29 36 20" stroke="#6BBF59" stroke-width="3.5" stroke-linecap="round"/><path d="M36 20 C36 15 33 11 29 8" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><polygon points="20,2 16,8 24,8" fill="#9B7EC8"/><polygon points="37,27 36,20 31,24" fill="#6BBF59"/><polygon points="3,13 4,20 9,16" fill="#9B7EC8"/><rect x="14" y="14" width="12" height="12" rx="2" fill="#6BBF59" opacity="0.9"/><rect x="17" y="11" width="6" height="4" rx="1" fill="#9B7EC8" opacity="0.85"/></svg>
+      <div class="land-logo">Loop<span>Back</span></div>
+    </div>
+    <div class="land-tag">Return for Rewards, Recycle for Good</div>
+    <div class="land-kiosk">📍 Mall of Emirates · Kiosk K-04</div>
+  </div>
+  <div class="land-body">
+    <div class="land-card">
+      <div class="land-card-icon">♻️</div>
+      <div class="land-card-title">Ready to recycle?</div>
+      <div class="land-card-sub">Connect your LoopBack account to this kiosk session to track your return, earn points, and see your environmental impact.</div>
+      <button class="btn btn-purple" onclick="connectAccount()">Connect Account</button>
+    </div>
+    <div class="land-steps">
+      <div class="land-step"><div class="land-sn">1</div><div class="land-step-txt">Connect your account</div></div>
+      <div class="land-step"><div class="land-sn">2</div><div class="land-step-txt">Verify item with AI camera</div></div>
+      <div class="land-step"><div class="land-sn">3</div><div class="land-step-txt">Deposit item &amp; earn points</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PAGE 2: PROFILE (after connecting)
+════════════════════════════════════════ -->
+<div class="page" id="page-profile">
+  <div class="status-bar"><span>9:41</span><span>▲ WiFi ■</span></div>
+  <div class="browser-bar">
+    <span class="browser-nav">←</span>
+    <div class="browser-url"><div class="url-dot"></div>loopback.ae/profile/injaz</div>
+    <span class="browser-nav">⋮</span>
+  </div>
+  <div class="prog"><div class="prog-fill" style="width:40%"></div></div>
+  <div class="top-bar">
+    <div class="top-logo-row">
+      <div class="top-logo">
+        <svg width="20" height="20" viewBox="0 0 40 40" fill="none"><path d="M20 6 C11 6 4 13 4 20" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><path d="M4 20 C4 29 11 36 20 36 C29 36 36 29 36 20" stroke="#6BBF59" stroke-width="3.5" stroke-linecap="round"/><path d="M36 20 C36 15 33 11 29 8" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><polygon points="20,2 16,8 24,8" fill="#9B7EC8"/><polygon points="37,27 36,20 31,24" fill="#6BBF59"/><polygon points="3,13 4,20 9,16" fill="#9B7EC8"/><rect x="14" y="14" width="12" height="12" rx="2" fill="#6BBF59" opacity="0.9"/><rect x="17" y="11" width="6" height="4" rx="1" fill="#9B7EC8" opacity="0.85"/></svg>
+        Loop<span>Back</span>
+      </div>
+      <div class="top-avatar">IJ</div>
+    </div>
+    <div class="prof-name">Injaz Judge</div>
+    <div class="prof-badge">🥉 Bronze Recycler</div>
+    <div class="prof-pts-row">
+      <div class="prof-pts-pill"><div class="prof-pts-num" id="profile-pts">240</div><div class="prof-pts-lbl">Points</div></div>
+      <div class="prof-pts-pill"><div class="prof-pts-num">8</div><div class="prof-pts-lbl">Returns</div></div>
+      <div class="prof-pts-pill"><div class="prof-pts-num">0.6kg</div><div class="prof-pts-lbl">Diverted</div></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="kiosk-tag">
+      <span style="font-size:16px;">✅</span>
+      <div><div class="kiosk-tag-lbl">Connected to kiosk</div><div class="kiosk-tag-name">Mall of Emirates · K-04</div></div>
+    </div>
+    <div id="profile-mat-chip"></div>
+    <button class="btn btn-purple" onclick="openCamera()" style="display:flex;align-items:center;justify-content:center;gap:10px;font-size:15px;">
+      <span style="font-size:20px;">📷</span> Take Photo to Verify Item
+    </button>
+    <div class="card">
+      <div class="card-lbl">Recent returns</div>
+      <div class="hist-row"><span class="hist-icon">📦</span><div><div class="hist-name">Cardboard</div><div class="hist-sub">Mall of Emirates · 2 days ago</div></div><div class="hist-pts">+7 pts</div></div>
+      <div class="hist-row"><span class="hist-icon">🧴</span><div><div class="hist-name">Plastic</div><div class="hist-sub">Dubai Mall · 5 days ago</div></div><div class="hist-pts">+5 pts</div></div>
+      <div class="hist-row"><span class="hist-icon">🛍️</span><div><div class="hist-name">Paper Bags</div><div class="hist-sub">Mall of Emirates · 1 wk ago</div></div><div class="hist-pts">+4 pts</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PAGE 3: CAMERA
+════════════════════════════════════ -->
+<div class="page" id="page-camera">
+  <div class="status-bar"><span>9:41</span><span>▲ WiFi ■</span></div>
+  <div class="browser-bar">
+    <span class="browser-nav">←</span>
+    <div class="browser-url"><div class="url-dot"></div>loopback.ae/profile/injaz</div>
+    <span class="browser-nav">⋮</span>
+  </div>
+  <div class="prog"><div class="prog-fill" style="width:60%"></div></div>
+  <div class="top-bar" style="padding-bottom:12px;">
+    <div class="top-logo-row">
+      <div class="top-logo"><svg width="18" height="18" viewBox="0 0 40 40" fill="none"><path d="M20 6 C11 6 4 13 4 20" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><path d="M4 20 C4 29 11 36 20 36 C29 36 36 29 36 20" stroke="#6BBF59" stroke-width="3.5" stroke-linecap="round"/><path d="M36 20 C36 15 33 11 29 8" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><polygon points="20,2 16,8 24,8" fill="#9B7EC8"/><polygon points="37,27 36,20 31,24" fill="#6BBF59"/><polygon points="3,13 4,20 9,16" fill="#9B7EC8"/><rect x="14" y="14" width="12" height="12" rx="2" fill="#6BBF59" opacity="0.9"/><rect x="17" y="11" width="6" height="4" rx="1" fill="#9B7EC8" opacity="0.85"/></svg>Loop<span>Back</span></div>
+      <div class="top-avatar">IJ</div>
+    </div>
+    <div style="font-size:13px;color:#fff;font-weight:700;margin-top:6px;">Verify your item</div>
+  </div>
+  <div class="body">
+    <div id="camera-mat-chip"></div>
+    <div class="cam-box">
+      <div class="cam-box-inner">📷</div>
+      <div class="cam-label">Camera active — point at item</div>
+      <div class="cam-corner tl"></div>
+      <div class="cam-corner tr"></div>
+      <div class="cam-corner bl"></div>
+      <div class="cam-corner br"></div>
+    </div>
+    <button class="btn btn-green" onclick="sendPhoto()" style="font-size:15px;">
+      ✅ Confirm &amp; Send for AI Check
+    </button>
+    <button class="btn btn-outline" onclick="showPage('page-profile')" style="padding:10px;font-size:12px;">← Back to profile</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PAGE 4: AI CHECKING
+════════════════════════════════════ -->
+<div class="page" id="page-ai">
+  <div class="status-bar"><span>9:41</span><span>▲ WiFi ■</span></div>
+  <div class="browser-bar">
+    <span class="browser-nav">←</span>
+    <div class="browser-url"><div class="url-dot"></div>loopback.ae/profile/injaz</div>
+    <span class="browser-nav">⋮</span>
+  </div>
+  <div class="prog"><div class="prog-fill" style="width:75%"></div></div>
+  <div class="top-bar" style="padding-bottom:12px;">
+    <div class="top-logo-row">
+      <div class="top-logo"><svg width="18" height="18" viewBox="0 0 40 40" fill="none"><path d="M20 6 C11 6 4 13 4 20" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><path d="M4 20 C4 29 11 36 20 36 C29 36 36 29 36 20" stroke="#6BBF59" stroke-width="3.5" stroke-linecap="round"/><path d="M36 20 C36 15 33 11 29 8" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><polygon points="20,2 16,8 24,8" fill="#9B7EC8"/><polygon points="37,27 36,20 31,24" fill="#6BBF59"/><polygon points="3,13 4,20 9,16" fill="#9B7EC8"/><rect x="14" y="14" width="12" height="12" rx="2" fill="#6BBF59" opacity="0.9"/><rect x="17" y="11" width="6" height="4" rx="1" fill="#9B7EC8" opacity="0.85"/></svg>Loop<span>Back</span></div>
+      <div class="top-avatar">IJ</div>
+    </div>
+    <div style="font-size:13px;color:#fff;font-weight:700;margin-top:6px;">AI Checking...</div>
+  </div>
+  <div class="body" style="align-items:center;justify-content:center;">
+    <div class="card" style="text-align:center;padding:24px;">
+      <div style="font-size:36px;margin-bottom:10px;">🤖</div>
+      <div style="font-family:'Syne',sans-serif;font-size:17px;color:var(--tx);">Analysing your item</div>
+      <div style="font-size:11px;color:var(--mt);margin-top:4px;">Powered by Claude Vision AI</div>
+      <div class="ai-bar"><div class="ai-fill" id="ai-fill-bar"></div></div>
+      <div style="font-size:10px;color:var(--mt);margin-top:10px;" id="ai-status-txt">Detecting material type...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PAGE 5: DEPOSIT
+════════════════════════════════════ -->
+<div class="page" id="page-deposit">
+  <div class="status-bar"><span>9:41</span><span>▲ WiFi ■</span></div>
+  <div class="browser-bar">
+    <span class="browser-nav">←</span>
+    <div class="browser-url"><div class="url-dot"></div>loopback.ae/profile/injaz</div>
+    <span class="browser-nav">⋮</span>
+  </div>
+  <div class="prog"><div class="prog-fill" style="width:88%"></div></div>
+  <div class="top-bar" style="padding-bottom:12px;">
+    <div class="top-logo-row">
+      <div class="top-logo"><svg width="18" height="18" viewBox="0 0 40 40" fill="none"><path d="M20 6 C11 6 4 13 4 20" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><path d="M4 20 C4 29 11 36 20 36 C29 36 36 29 36 20" stroke="#6BBF59" stroke-width="3.5" stroke-linecap="round"/><path d="M36 20 C36 15 33 11 29 8" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><polygon points="20,2 16,8 24,8" fill="#9B7EC8"/><polygon points="37,27 36,20 31,24" fill="#6BBF59"/><polygon points="3,13 4,20 9,16" fill="#9B7EC8"/><rect x="14" y="14" width="12" height="12" rx="2" fill="#6BBF59" opacity="0.9"/><rect x="17" y="11" width="6" height="4" rx="1" fill="#9B7EC8" opacity="0.85"/></svg>Loop<span>Back</span></div>
+      <div class="top-avatar">IJ</div>
+    </div>
+    <div style="font-size:13px;color:#fff;font-weight:700;margin-top:6px;">Deposit your item</div>
+  </div>
+  <div class="body">
+    <div style="display:flex;align-items:center;gap:9px;background:var(--pp);border:1px solid var(--pl);border-radius:11px;padding:9px 12px;">
+      <span style="font-size:16px;">🤖</span>
+      <div><div style="font-size:9px;color:var(--pd);font-weight:600;">AI Verified ✓</div><div id="dep-verified-txt" style="font-size:12px;font-weight:800;color:var(--tx);">Item confirmed</div></div>
+    </div>
+    <div class="dep-box">
+      <div class="dep-icon">🗃️</div>
+      <div class="dep-title">Now deposit your item</div>
+      <div class="dep-sub" id="dep-instructions">Open the compartment on the kiosk and place your item inside.</div>
+      <button class="btn btn-green" onclick="confirmDeposit()" style="font-size:14px;">✅ Done — I deposited it</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+     PAGE 6: SUCCESS
+════════════════════════════════════ -->
+<div class="page" id="page-success">
+  <div class="status-bar"><span>9:41</span><span>▲ WiFi ■</span></div>
+  <div class="browser-bar">
+    <span class="browser-nav">←</span>
+    <div class="browser-url"><div class="url-dot"></div>loopback.ae/profile/injaz</div>
+    <span class="browser-nav">⋮</span>
+  </div>
+  <div class="prog"><div class="prog-fill" style="width:100%"></div></div>
+  <div class="top-bar">
+    <div class="top-logo-row">
+      <div class="top-logo"><svg width="18" height="18" viewBox="0 0 40 40" fill="none"><path d="M20 6 C11 6 4 13 4 20" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><path d="M4 20 C4 29 11 36 20 36 C29 36 36 29 36 20" stroke="#6BBF59" stroke-width="3.5" stroke-linecap="round"/><path d="M36 20 C36 15 33 11 29 8" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/><polygon points="20,2 16,8 24,8" fill="#9B7EC8"/><polygon points="37,27 36,20 31,24" fill="#6BBF59"/><polygon points="3,13 4,20 9,16" fill="#9B7EC8"/><rect x="14" y="14" width="12" height="12" rx="2" fill="#6BBF59" opacity="0.9"/><rect x="17" y="11" width="6" height="4" rx="1" fill="#9B7EC8" opacity="0.85"/></svg>Loop<span>Back</span></div>
+      <div class="top-avatar">IJ</div>
+    </div>
+    <div class="prof-name">Injaz Judge</div>
+    <div class="prof-badge">🥈 Silver Recycler</div>
+    <div class="prof-pts-row">
+      <div class="prof-pts-pill"><div class="prof-pts-num" id="success-pts-display">245</div><div class="prof-pts-lbl">Points</div></div>
+      <div class="prof-pts-pill"><div class="prof-pts-num">9</div><div class="prof-pts-lbl">Returns</div></div>
+      <div class="prof-pts-pill"><div class="prof-pts-num" id="success-kg">0.64kg</div><div class="prof-pts-lbl">Diverted</div></div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="suc-card">
+      <div class="suc-icon">🎉</div>
+      <div class="suc-pts" id="suc-pts-big">+5 points!</div>
+      <div class="suc-lbl">Added to your profile</div>
+      <div class="suc-msg" id="suc-msg">You returned 1 item and helped reduce packaging waste. Keep it up!</div>
+    </div>
+    <div class="bal-card">
+      <div class="bal-lbl">Your new balance</div>
+      <div class="bal-num" id="bal-num">245</div>
+      <div class="bal-lvl" id="bal-lvl">Silver Recycler 🥈</div>
+    </div>
+    <button class="btn btn-outline" onclick="backToProfile()" style="padding:12px;font-size:13px;">↩ Back to My Profile</button>
+  </div>
+</div>
+
+<script>
+  const MATS = {
+    plastic:   { label:'Plastic',    icon:'🧴', pts:5, comp:'Left compartment',   kg:'0.02' },
+    paper:     { label:'Paper Bags', icon:'🛍️', pts:4, comp:'Middle compartment', kg:'0.04' },
+    cardboard: { label:'Cardboard',  icon:'📦', pts:7, comp:'Right compartment',  kg:'0.10' },
+  };
+  let totalPts = 240;
+  let currentMat = null;
+
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  function getMat() {
+    // Try localStorage first (set by kiosk), fallback to plastic for demo
+    const stored = localStorage.getItem('lb_kiosk_mat');
+    return (stored && MATS[stored]) ? stored : 'plastic';
+  }
+
+  function connectAccount() {
+    currentMat = getMat();
+    const m = MATS[currentMat];
+    // Show mat chip on profile
+    document.getElementById('profile-mat-chip').innerHTML =
+      `<div class="mat-chip"><span class="mat-chip-icon">${m.icon}</span>
+       <div><div class="mat-chip-lbl">Kiosk selected</div><div class="mat-chip-name">${m.label}</div></div>
+       <div class="mat-chip-pts">+${m.pts} pts</div></div>`;
+    document.getElementById('profile-pts').textContent = totalPts;
+    // Tell kiosk
+    localStorage.setItem('lb_phone_msg', 'connected');
+    showPage('page-profile');
+  }
+
+  function openCamera() {
+    const m = MATS[currentMat || getMat()];
+    document.getElementById('camera-mat-chip').innerHTML =
+      `<div class="mat-chip"><span class="mat-chip-icon">${m.icon}</span>
+       <div><div class="mat-chip-lbl">Confirm this item</div><div class="mat-chip-name">${m.label}</div></div>
+       <div class="mat-chip-pts">+${m.pts} pts</div></div>`;
+    showPage('page-camera');
+  }
+
+  function sendPhoto() {
+    localStorage.setItem('lb_phone_msg', 'photo_taken');
+    showPage('page-ai');
+    // Animate AI bar, then go to deposit
+    const msgs = ['Detecting material type...', 'Analysing shape and texture...', 'Confirming match...', 'Verified ✓'];
+    let i = 0;
+    const interval = setInterval(() => {
+      i++;
+      if (document.getElementById('ai-status-txt'))
+        document.getElementById('ai-status-txt').textContent = msgs[Math.min(i, msgs.length-1)];
+      if (i >= 3) {
+        clearInterval(interval);
+        setTimeout(() => {
+          const m = MATS[currentMat || getMat()];
+          document.getElementById('dep-verified-txt').textContent = m.label + ' confirmed';
+          document.getElementById('dep-instructions').innerHTML =
+            `Open the <strong>${m.comp}</strong> on the kiosk and place your ${m.label.toLowerCase()} inside.`;
+          showPage('page-deposit');
+        }, 600);
+      }
+    }, 600);
+  }
+
+  function confirmDeposit() {
+    localStorage.setItem('lb_phone_msg', 'deposited');
+    const m = MATS[currentMat || getMat()];
+    totalPts += m.pts;
+    const newKg = (0.6 + parseFloat(m.kg)).toFixed(2);
+    document.getElementById('suc-pts-big').textContent = '+' + m.pts + ' points!';
+    document.getElementById('suc-msg').textContent =
+      `You returned 1 ${m.label.toLowerCase()} and helped divert packaging waste. Amazing work!`;
+    document.getElementById('success-pts-display').textContent = totalPts;
+    document.getElementById('success-kg').textContent = newKg + 'kg';
+    document.getElementById('bal-num').textContent = totalPts;
+    document.getElementById('bal-lvl').textContent = totalPts >= 250 ? 'Gold Recycler 🥇' : 'Silver Recycler 🥈';
+    showPage('page-success');
+  }
+
+  function backToProfile() {
+    document.getElementById('profile-pts').textContent = totalPts;
+    showPage('page-profile');
+  }
+
+  // On load: check if kiosk already has a material selected
+  window.addEventListener('load', () => {
+    currentMat = getMat();
+  });
+</script>
+</body>
+</html>

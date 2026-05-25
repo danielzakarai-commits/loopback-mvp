@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LoopBack — Smart Return Station</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --p: #7B5EA7; --pl: #9B7EC8; --pp: #EDE8F5; --pd: #4A3570;
+    --g: #6BBF59; --gl: #8DD47D; --gp: #EAF5E6; --gd: #3D7A2D;
+    --tx: #2A1F40; --mt: #7B6E96; --bd: #E0D8F0; --wh: #fff; --bg: #F7F5FF;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    font-family: 'DM Sans', sans-serif;
+    background: #1a1030;
+  }
+
+  /* ── background ── */
+  .bg {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #1a1030 0%, #0e1f10 100%);
+  }
+  .bg-orb {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25;
+  }
+  .bg-orb.a { width: 500px; height: 500px; background: var(--p); top: -150px; left: -100px; }
+  .bg-orb.b { width: 400px; height: 400px; background: var(--g); bottom: -100px; right: -80px; }
+  .bg-orb.c { width: 300px; height: 300px; background: var(--pl); top: 40%; left: 40%; }
+
+  /* ── layout ── */
+  .screen {
+    position: relative; z-index: 1;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+  }
+
+  /* ── header ── */
+  header {
+    background: rgba(255,255,255,0.06);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 14px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .logo-row { display: flex; align-items: center; gap: 12px; }
+  .logo-text { font-family: 'Syne', sans-serif; font-size: 22px; color: #fff; }
+  .logo-text span { color: var(--gl); }
+  .logo-tag { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 1px; letter-spacing: 0.3px; }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(107,191,89,0.2); border: 1px solid rgba(107,191,89,0.4);
+    border-radius: 20px; padding: 5px 14px;
+    font-size: 11px; color: var(--gl); font-weight: 700;
+  }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gl); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .location-badge {
+    font-size: 11px; color: rgba(255,255,255,0.5);
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ── progress bar ── */
+  .prog-wrap { height: 3px; background: rgba(255,255,255,0.08); flex-shrink: 0; }
+  .prog-fill { height: 100%; background: var(--g); transition: width 0.6s ease; width: 0%; }
+
+  /* ── main body ── */
+  main { flex: 1; display: flex; gap: 0; overflow: hidden; }
+
+  /* ── left panel ── */
+  .left-panel {
+    flex: 1; padding: 28px 32px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .welcome-text { font-family: 'Syne', sans-serif; }
+  .welcome-eyebrow {
+    font-size: 11px; color: var(--gl); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px; margin-bottom: 6px;
+  }
+  .welcome-title { font-size: 36px; color: #fff; line-height: 1.1; }
+  .welcome-title span { color: var(--gl); }
+  .welcome-sub { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 6px; line-height: 1.5; }
+
+  /* steps */
+  .steps { display: flex; flex-direction: column; gap: 10px; }
+  .step {
+    display: flex; align-items: center; gap: 12px;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 10px 14px;
+    transition: all 0.3s;
+  }
+  .step.active { background: rgba(107,191,89,0.12); border-color: rgba(107,191,89,0.3); }
+  .step-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.6); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step.active .step-num { background: var(--g); border-color: var(--g); color: #fff; }
+  .step-txt { font-size: 12px; color: rgba(255,255,255,0.6); font-weight: 500; }
+  .step.active .step-txt { color: #fff; }
+
+  /* materials */
+  .materials-label {
+    font-size: 11px; color: rgba(255,255,255,0.4);
+    text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;
+  }
+  .mats { display: flex; gap: 12px; }
+  .mat {
+    flex: 1; border-radius: 16px; padding: 16px 10px; text-align: center;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    cursor: pointer; transition: all 0.25s;
+  }
+  .mat:hover { background: rgba(123,94,167,0.2); border-color: rgba(123,94,167,0.5); transform: translateY(-2px); }
+  .mat.sel {
+    background: rgba(107,191,89,0.15); border-color: var(--g);
+    box-shadow: 0 0 20px rgba(107,191,89,0.2);
+    transform: translateY(-2px);
+  }
+  .mat-icon { font-size: 28px; margin-bottom: 8px; }
+  .mat-label { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.8); text-transform: uppercase; letter-spacing: 0.5px; }
+  .mat-pts { font-size: 13px; color: var(--gl); font-weight: 800; margin-top: 4px; }
+  .mat-pts::before { content: '+'; }
+  .mat-ex { font-size: 9px; color: rgba(255,255,255,0.35); margin-top: 3px; }
+
+  /* ── right panel (QR area) ── */
+  .right-panel {
+    width: 260px; flex-shrink: 0;
+    background: rgba(255,255,255,0.04);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 16px; padding: 24px;
+  }
+  .qr-card {
+    background: #fff; border-radius: 16px; padding: 12px;
+    box-shadow: 0 0 40px rgba(107,191,89,0.3), 0 0 0 1px rgba(107,191,89,0.2);
+  }
+  .qr-card svg { display: block; }
+  .qr-caption { text-align: center; }
+  .qr-caption-title { font-size: 13px; font-weight: 700; color: #fff; }
+  .qr-caption-sub { font-size: 10px; color: rgba(255,255,255,0.4); margin-top: 3px; line-height: 1.4; }
+  .qr-ready {
+    font-size: 10px; color: var(--gl); font-weight: 700;
+    background: rgba(107,191,89,0.15); border: 1px solid rgba(107,191,89,0.3);
+    border-radius: 20px; padding: 4px 12px;
+  }
+
+  /* ── WAITING STATES ── */
+  .wait-screen {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 16px;
+    padding: 32px;
+  }
+  .wait-icon { font-size: 56px; }
+  .wait-title { font-family: 'Syne', sans-serif; font-size: 24px; color: #fff; text-align: center; }
+  .wait-sub { font-size: 13px; color: rgba(255,255,255,0.5); text-align: center; }
+  .wait-chip {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(107,191,89,0.12); border: 1px solid rgba(107,191,89,0.3);
+    border-radius: 12px; padding: 10px 18px; margin-top: 4px;
+  }
+  .wait-chip-icon { font-size: 22px; }
+  .wait-chip-label { font-size: 11px; color: var(--gl); font-weight: 600; }
+  .wait-chip-name { font-size: 16px; font-weight: 800; color: #fff; }
+  .wait-chip-pts { font-size: 14px; color: var(--gl); font-weight: 800; margin-left: 12px; }
+  .spin { animation: spin 1.2s linear infinite; display: inline-block; }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+  /* ── SUCCESS ── */
+  .success-screen {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    padding: 32px; text-align: center;
+  }
+  .success-ring {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(107,191,89,0.15); border: 3px solid var(--g);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    box-shadow: 0 0 40px rgba(107,191,89,0.3);
+    animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;
+  }
+  @keyframes popIn { from{transform:scale(0);opacity:0} to{transform:scale(1);opacity:1} }
+  .success-title { font-family: 'Syne', sans-serif; font-size: 26px; color: #fff; line-height: 1.2; }
+  .pts-big { font-family: 'Syne', sans-serif; font-size: 56px; color: var(--g); line-height: 1; }
+  .pts-lbl { font-size: 12px; color: rgba(255,255,255,0.4); text-transform: uppercase; letter-spacing: 2px; }
+  .success-msg { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.6; max-width: 360px; }
+  .success-chips { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .success-chip {
+    background: rgba(123,94,167,0.2); border: 1px solid rgba(123,94,167,0.4);
+    border-radius: 20px; padding: 5px 14px;
+    font-size: 11px; color: var(--pl); font-weight: 600;
+  }
+  .reset-btn {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px; color: rgba(255,255,255,0.7);
+    font-size: 12px; font-weight: 700; padding: 10px 24px;
+    cursor: pointer; margin-top: 8px; transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .reset-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
+  /* ── footer ── */
+  footer {
+    background: rgba(255,255,255,0.04);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 8px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .foot-loc { font-size: 10px; color: rgba(255,255,255,0.3); display: flex; align-items: center; gap: 6px; }
+  .foot-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--g); animation: pulse 2s infinite; }
+  .foot-right { font-size: 10px; color: rgba(255,255,255,0.2); }
+
+  .fade-in { animation: fadeUp 0.35s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  /* hide/show helpers */
+  [data-screen] { display: none; }
+  [data-screen].active { display: flex; }
+</style>
+</head>
+<body>
+<div class="bg">
+  <div class="bg-orb a"></div>
+  <div class="bg-orb b"></div>
+  <div class="bg-orb c"></div>
+</div>
+
+<div class="screen">
+  <!-- HEADER -->
+  <header>
+    <div class="logo-row">
+      <svg width="32" height="32" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 6 C11 6 4 13 4 20" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M4 20 C4 29 11 36 20 36 C29 36 36 29 36 20" stroke="#6BBF59" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M36 20 C36 15 33 11 29 8" stroke="#9B7EC8" stroke-width="3.5" stroke-linecap="round"/>
+        <polygon points="20,2 16,8 24,8" fill="#9B7EC8"/>
+        <polygon points="37,27 36,20 31,24" fill="#6BBF59"/>
+        <polygon points="3,13 4,20 9,16" fill="#9B7EC8"/>
+        <rect x="14" y="14" width="12" height="12" rx="2" fill="#6BBF59" opacity="0.9"/>
+        <rect x="17" y="11" width="6" height="4" rx="1" fill="#9B7EC8" opacity="0.85"/>
+      </svg>
+      <div>
+        <div class="logo-text">Loop<span>Back</span></div>
+        <div class="logo-tag">Return for Rewards, Recycle for Good</div>
+      </div>
+    </div>
+    <div class="location-badge">📍 Mall of Emirates · Kiosk K-04 · Dubai</div>
+    <div class="live-badge"><div class="live-dot"></div>Live</div>
+  </header>
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap"><div class="prog-fill" id="prog"></div></div>
+
+  <!-- SCREEN: IDLE -->
+  <main id="screen-idle" data-screen class="active fade-in">
+    <div class="left-panel">
+      <div class="welcome-text">
+        <div class="welcome-eyebrow">♻ Smart Return Station</div>
+        <div class="welcome-title">Welcome to<br><span>LoopBack</span></div>
+        <div class="welcome-sub">Return your packaging. Earn reward points.<br>Track your environmental impact.</div>
+      </div>
+
+      <div class="steps">
+        <div class="step active"><div class="step-num">1</div><div class="step-txt">Select your material type below</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-txt">Scan the QR code — opens your LoopBack profile on your phone</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-txt">Tap "Connect Account" on the web page</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-txt">Use camera to verify your item with AI</div></div>
+        <div class="step"><div class="step-num">5</div><div class="step-txt">Deposit item &amp; earn your points</div></div>
+      </div>
+
+      <div>
+        <div class="materials-label" style="margin-bottom:10px;">Select material type</div>
+        <div class="mats">
+          <div class="mat" id="mat-plastic" onclick="selectMat('plastic')">
+            <div class="mat-icon">🧴</div>
+            <div class="mat-label">Plastic</div>
+            <div class="mat-pts">5 pts</div>
+            <div class="mat-ex">Bottles, bags</div>
+          </div>
+          <div class="mat" id="mat-paper" onclick="selectMat('paper')">
+            <div class="mat-icon">🛍️</div>
+            <div class="mat-label">Paper Bags</div>
+            <div class="mat-pts">4 pts</div>
+            <div class="mat-ex">Shopping bags</div>
+          </div>
+          <div class="mat" id="mat-cardboard" onclick="selectMat('cardboard')">
+            <div class="mat-icon">📦</div>
+            <div class="mat-label">Cardboard</div>
+            <div class="mat-pts">7 pts</div>
+            <div class="mat-ex">Boxes, boards</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="qr-card">
+        <svg width="160" height="160" viewBox="0 0 68 68" xmlns="http://www.w3.org/2000/svg">
+          <rect width="68" height="68" fill="white"/>
+          <!-- QR pattern -->
+          <g fill="#4A3570">
+            <!-- top-left finder -->
+            <rect x="0" y="0" width="28" height="28"/>
+            <rect x="4" y="4" width="20" height="20" fill="white"/>
+            <rect x="8" y="8" width="12" height="12"/>
+            <!-- top-right finder -->
+            <rect x="40" y="0" width="28" height="28"/>
+            <rect x="44" y="4" width="20" height="20" fill="white"/>
+            <rect x="48" y="8" width="12" height="12"/>
+            <!-- bottom-left finder -->
+            <rect x="0" y="40" width="28" height="28"/>
+            <rect x="4" y="44" width="20" height="20" fill="white"/>
+            <rect x="8" y="48" width="12" height="12"/>
+            <!-- data dots -->
+            <rect x="32" y="0" width="4" height="4"/>
+            <rect x="36" y="4" width="4" height="4"/>
+            <rect x="32" y="8" width="4" height="4"/>
+            <rect x="32" y="16" width="4" height="4"/>
+            <rect x="36" y="12" width="4" height="4"/>
+            <rect x="0" y="32" width="4" height="4"/>
+            <rect x="8" y="32" width="4" height="4"/>
+            <rect x="16" y="32" width="4" height="4"/>
+            <rect x="32" y="32" width="4" height="4"/>
+            <rect x="40" y="32" width="4" height="4"/>
+            <rect x="48" y="32" width="4" height="4"/>
+            <rect x="56" y="32" width="4" height="4"/>
+            <rect x="64" y="32" width="4" height="4"/>
+            <rect x="32" y="40" width="4" height="4"/>
+            <rect x="40" y="40" width="4" height="4"/>
+            <rect x="56" y="40" width="4" height="4"/>
+            <rect x="36" y="44" width="4" height="4"/>
+            <rect x="44" y="44" width="4" height="4"/>
+            <rect x="60" y="44" width="4" height="4"/>
+            <rect x="32" y="48" width="4" height="4"/>
+            <rect x="48" y="48" width="4" height="4"/>
+            <rect x="64" y="48" width="4" height="4"/>
+            <rect x="36" y="52" width="4" height="4"/>
+            <rect x="52" y="52" width="4" height="4"/>
+            <rect x="60" y="52" width="4" height="4"/>
+            <rect x="32" y="56" width="4" height="4"/>
+            <rect x="40" y="56" width="4" height="4"/>
+            <rect x="56" y="56" width="4" height="4"/>
+            <rect x="36" y="60" width="4" height="4"/>
+            <rect x="44" y="60" width="4" height="4"/>
+            <rect x="52" y="60" width="4" height="4"/>
+            <rect x="64" y="60" width="4" height="4"/>
+            <rect x="32" y="64" width="4" height="4"/>
+            <rect x="48" y="64" width="4" height="4"/>
+            <rect x="60" y="64" width="4" height="4"/>
+          </g>
+        </svg>
+      </div>
+      <div class="qr-caption">
+        <div class="qr-caption-title">Scan with your phone</div>
+        <div class="qr-caption-sub" id="qr-status">Select a material<br>then scan to start</div>
+      </div>
+      <div class="qr-ready" id="qr-ready" style="display:none;">✓ Ready to scan</div>
+    </div>
+  </main>
+
+  <!-- SCREEN: WAITING FOR CONNECT -->
+  <main id="screen-connecting" data-screen>
+    <div class="wait-screen fade-in">
+      <div class="wait-icon">📱</div>
+      <div class="wait-title">Web page open on user's phone</div>
+      <div class="wait-sub">Waiting for user to tap "Connect Account"...</div>
+      <div class="wait-chip" id="chip-connecting"></div>
+    </div>
+  </main>
+
+  <!-- SCREEN: WAITING FOR CAMERA -->
+  <main id="screen-camera" data-screen>
+    <div class="wait-screen fade-in">
+      <div class="wait-icon">📸</div>
+      <div class="wait-title">Account connected</div>
+      <div class="wait-sub">Waiting for user to verify item with camera...</div>
+      <div class="wait-chip" id="chip-camera"></div>
+    </div>
+  </main>
+
+  <!-- SCREEN: AI CHECKING -->
+  <main id="screen-ai" data-screen>
+    <div class="wait-screen fade-in">
+      <div class="wait-icon spin">⚙️</div>
+      <div class="wait-title">AI verifying item...</div>
+      <div class="wait-sub">Claude Vision is checking the material type</div>
+      <div class="wait-chip" id="chip-ai"></div>
+    </div>
+  </main>
+
+  <!-- SCREEN: DEPOSIT -->
+  <main id="screen-deposit" data-screen>
+    <div class="wait-screen fade-in">
+      <div class="wait-icon">🗃️</div>
+      <div class="wait-title">Item verified — please deposit</div>
+      <div class="wait-sub">User is placing item into the kiosk compartment</div>
+      <div class="wait-chip" id="chip-deposit"></div>
+    </div>
+  </main>
+
+  <!-- SCREEN: SUCCESS -->
+  <main id="screen-success" data-screen>
+    <div class="success-screen fade-in">
+      <div class="success-ring">✅</div>
+      <div class="success-title">Thank you for being<br>part of the solution!</div>
+      <div class="pts-big" id="pts-big">+5</div>
+      <div class="pts-lbl">Points Earned</div>
+      <div class="success-msg" id="success-msg">You helped divert packaging from landfill.</div>
+      <div class="success-chips" id="success-chips"></div>
+      <button class="reset-btn" onclick="resetKiosk()">↩ Start New Session</button>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="foot-loc"><div class="foot-dot"></div>Mall of Emirates · Kiosk K-04 · Dubai, UAE</div>
+    <div class="foot-right">LoopBack MVP v1.0 — loopback.ae</div>
+  </footer>
+</div>
+
+<script>
+  const MATS = {
+    plastic:   { label: 'Plastic',    icon: '🧴', pts: 5, comp: 'Left compartment',   kg: '0.02' },
+    paper:     { label: 'Paper Bags', icon: '🛍️', pts: 4, comp: 'Middle compartment', kg: '0.04' },
+    cardboard: { label: 'Cardboard',  icon: '📦', pts: 7, comp: 'Right compartment',  kg: '0.10' },
+  };
+  let selectedMat = null;
+  let totalPts = 240;
+
+  const PROG = { idle:0, connecting:25, camera:50, ai:70, deposit:85, success:100 };
+
+  function setScreen(name) {
+    document.querySelectorAll('[data-screen]').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    document.getElementById('prog').style.width = PROG[name] + '%';
+  }
+
+  function matChipHTML(id) {
+    const m = MATS[id];
+    return `<span class="wait-chip-icon">${m.icon}</span>
+            <div><div class="wait-chip-label">Selected material</div><div class="wait-chip-name">${m.label}</div></div>
+            <div class="wait-chip-pts">+${m.pts} pts</div>`;
+  }
+
+  function selectMat(id) {
+    selectedMat = id;
+    document.querySelectorAll('.mat').forEach(el => el.classList.remove('sel'));
+    document.getElementById('mat-' + id).classList.add('sel');
+    document.getElementById('qr-status').innerHTML = 'Material selected<br>Scan to open profile';
+    document.getElementById('qr-ready').style.display = 'block';
+    // highlight active step
+    document.querySelectorAll('.step').forEach((s, i) => {
+      s.classList.toggle('active', i === 1);
+    });
+  }
+
+  // Called from phone page via localStorage polling
+  function checkPhoneMessages() {
+    const msg = localStorage.getItem('lb_phone_msg');
+    if (!msg) return;
+    localStorage.removeItem('lb_phone_msg');
+    if (msg === 'connected') {
+      goCamera();
+    } else if (msg === 'photo_taken') {
+      goAI();
+    } else if (msg === 'deposited') {
+      goSuccess();
+    }
+  }
+
+  function goConnecting() {
+    if (!selectedMat) { alert('Please select a material first!'); return; }
+    document.getElementById('chip-connecting').innerHTML = matChipHTML(selectedMat);
+    setScreen('connecting');
+    localStorage.setItem('lb_kiosk_mat', selectedMat);
+  }
+
+  function goCamera() {
+    document.getElementById('chip-camera').innerHTML = matChipHTML(selectedMat);
+    setScreen('camera');
+  }
+
+  function goAI() {
+    document.getElementById('chip-ai').innerHTML = matChipHTML(selectedMat);
+    setScreen('ai');
+  }
+
+  function goDeposit() {
+    document.getElementById('chip-deposit').innerHTML = matChipHTML(selectedMat);
+    setScreen('deposit');
+  }
+
+  function goSuccess() {
+    const m = MATS[selectedMat];
+    totalPts += m.pts;
+    document.getElementById('pts-big').textContent = '+' + m.pts;
+    document.getElementById('success-msg').textContent =
+      `You returned 1 ${m.label.toLowerCase()} item and helped divert ${m.kg}kg of packaging from landfill. New balance: ${totalPts} points.`;
+    document.getElementById('success-chips').innerHTML =
+      `<div class="success-chip">🌿 ${m.kg}kg diverted</div>
+       <div class="success-chip">♻ 1 item returned</div>
+       <div class="success-chip">⭐ ${totalPts} pts total</div>`;
+    setScreen('success');
+    localStorage.setItem('lb_kiosk_mat', '');
+    setTimeout(() => resetKiosk(), 8000);
+  }
+
+  function resetKiosk() {
+    selectedMat = null;
+    document.querySelectorAll('.mat').forEach(el => el.classList.remove('sel'));
+    document.getElementById('qr-status').innerHTML = 'Select a material<br>then scan to start';
+    document.getElementById('qr-ready').style.display = 'none';
+    document.querySelectorAll('.step').forEach((s, i) => s.classList.toggle('active', i === 0));
+    setScreen('idle');
+  }
+
+  // Poll for phone messages every 500ms
+  setInterval(checkPhoneMessages, 500);
+
+  // DEMO MODE: keyboard shortcuts for live demo
+  // Press 1 = simulate QR scanned (go to connecting)
+  // Press 2 = simulate account connected
+  // Press 3 = simulate photo taken
+  // Press 4 = simulate deposited
+  document.addEventListener('keydown', e => {
+    if (e.key === '1') goConnecting();
+    if (e.key === '2') goCamera();
+    if (e.key === '3') goAI();
+    if (e.key === '4') { goDeposit(); setTimeout(goSuccess, 1500); }
+  });
+</script>
+</body>
+</html>
